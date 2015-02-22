@@ -1,8 +1,20 @@
+#include <FastLED.h>
+
+#define LED_PIN     2
+#define NUM_LEDS    15
+#define BRIGHTNESS  64
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+CRGB leds[NUM_LEDS];
+
 //Adapted from David A. Mellis' code for Ping sensor
 const int trigPin = 7;
 const int echoPin = 8;
 
 void setup() {
+  delay( 3000 ); // power-up safety delay
+  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.setBrightness(BRIGHTNESS);
   // initialize serial communication:
   Serial.begin(9600);
   pinMode(trigPin,OUTPUT);
@@ -11,7 +23,7 @@ void setup() {
 
 void loop()
 {
-  long duration, inches, cm;
+  long duration, cm;
 
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -22,26 +34,27 @@ void loop()
   duration = pulseIn(echoPin, HIGH);
 
   // convert the time into a distance
-  inches = microsecondsToInches(duration);
   cm = microsecondsToCentimeters(duration);
   
-  Serial.print(inches);
-  Serial.print("in, ");
+  int pos = map(cm, 5, 40, NUM_LEDS, 0);
+  Serial.print("pos ");
+  Serial.println(pos);
+  
+  for( int i = 0; i < NUM_LEDS; i++) {
+    if(i<pos){
+      leds[i] = CHSV( HUE_BLUE - 30 + 2*pos, 255, 255 - 75 + 5*pos);
+    }else{
+      leds[i] = CRGB::Black;
+    }
+  }
+  
+  FastLED.show();
+   
   Serial.print(cm);
   Serial.print("cm");
   Serial.println();
   
   delay(100);
-}
-
-long microsecondsToInches(long microseconds)
-{
-  // According to Parallax's datasheet for the PING))), there are
-  // 73.746 microseconds per inch (i.e. sound travels at 1130 feet per
-  // second).  This gives the distance travelled by the ping, outbound
-  // and return, so we divide by 2 to get the distance of the obstacle.
-  // See: http://www.parallax.com/dl/docs/prod/acc/28015-PING-v1.3.pdf
-  return microseconds / 74 / 2;
 }
 
 long microsecondsToCentimeters(long microseconds)

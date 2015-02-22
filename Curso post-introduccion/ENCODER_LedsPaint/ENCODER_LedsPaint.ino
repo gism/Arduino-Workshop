@@ -28,6 +28,7 @@ int push_mils = 0;
 
 int change = 0;
 int changing = 0;
+int flash = 0;
 
 unsigned long time =0;
 
@@ -48,8 +49,10 @@ void setup() {
   
   
   for( int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CHSV( hue + i*17, 255, 255);
-      memLeds[i] = CHSV( hue + i*17, 255, 255);
+//      leds[i] = CHSV( hue + i*17, 255, 255);
+//      memLeds[i] = CHSV( hue + i*17, 255, 255);
+    leds[i] = CRGB::Black;
+    memLeds[i] = CHSV( 0, 255, 0);
   }
 }
 
@@ -58,9 +61,7 @@ void loop(){
   
   if(!digitalRead(encoderSW)){
     while(!digitalRead(encoderSW));
-    changing = !changing;
-    Serial.print("ch ");
-     Serial.print(encoder0Pos);    
+    changing = !changing;   
   }
   
   n = digitalRead(encoder0PinA);
@@ -85,40 +86,58 @@ void loop(){
   } 
   encoder0PinALast = n;
   
-  if(change){  
+  if(millis() - time > 800){
+    flash = !flash;
+    time = millis();
+    change = 1;
+  }
+  
+  if(flash){
+    if(!changing){
+      leds[encoder0Pos] = CRGB::White;
+    }
+  }else{
+    //hsv2rgb_spectrum(memLeds[encoder0Pos], leds[encoder0Pos]);
+    hsv2rgb_spectrum( memLeds, leds, NUM_LEDS); 
+  }
+
+  if(change){   
     FastLED.show();
+    change = 0;
   }
-  
-  if(millis() - time > 700){
-    
-  }
-  
-  
-  
+ 
 }
 
 void moveUp(){
   if(encoder0Pos < NUM_LEDS){
     encoder0Pos++;
-  }    
+    
+    time = millis();
+    flash =1;
+  }
+  hsv2rgb_spectrum( memLeds, leds, NUM_LEDS);
 }
 
 void moveDown(){
   if(encoder0Pos > 0){
     encoder0Pos--;
-  }     
+    
+    time = millis();
+    flash = 1;
+  }
+  hsv2rgb_spectrum( memLeds, leds, NUM_LEDS); 
 }
 
 
 void colorUp(){
    memLeds[encoder0Pos].hue = memLeds[encoder0Pos].hue + 5;
-   hsv2rgb_spectrum( memLeds, leds, NUM_LEDS); 
-   Serial.println("+"); 
+   memLeds[encoder0Pos].val = 255;
+   hsv2rgb_spectrum( memLeds, leds, NUM_LEDS);  
 }
 
 void colorDown(){
   memLeds[encoder0Pos].hue = memLeds[encoder0Pos].hue - 5;
+  memLeds[encoder0Pos].val = 255;
   hsv2rgb_spectrum( memLeds, leds, NUM_LEDS); 
-  Serial.println("-"); 
 }
 
